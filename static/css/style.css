@@ -1,0 +1,265 @@
+/* Custom styling & UI enhancements */
+@import url('https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap');
+
+body {
+    font-family: 'Outfit', sans-serif;
+    background-color: #0b0f19;
+    color: #f1f5f9;
+}
+
+/* Custom Scrollbar */
+::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+}
+::-webkit-scrollbar-track {
+    background: #0f172a;
+}
+::-webkit-scrollbar-thumb {
+    background: #334155;
+    border-radius: 9999px;
+}
+::-webkit-scrollbar-thumb:hover {
+    background: #f59e0b;
+}
+
+/* Glassmorphism utility */
+.glass-panel {
+    background: rgba(17, 24, 39, 0.7);
+    backdrop-filter: blur(12px);
+    -webkit-backdrop-filter: blur(12px);
+    border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+/* Modal animation */
+@keyframes modalFadeIn {
+    from {
+        opacity: 0;
+        transform: scale(0.96) translateY(10px);
+    }
+    to {
+        opacity: 1;
+        transform: scale(1) translateY(0);
+    }
+}
+
+.animate-modal {
+    animation: modalFadeIn 0.25s ease-out forwards;
+}
+
+/* Option button active states */
+.opt-btn.active-opt {
+    border-color: #f59e0b !important;
+    background-color: rgba(245, 158, 11, 0.12) !important;
+    box-shadow: 0 0 15px rgba(245, 158, 11, 0.15);
+}
+
+.vibe-btn.active-vibe {
+    border-color: #f59e0b !important;
+    background-color: rgba(245, 158, 11, 0.15) !important;
+    color: #fbbf24 !important;
+    box-shadow: 0 0 12px rgba(245, 158, 11, 0.15);
+}
+
+/* ── Detail Modal — scrollable overlay & content body ─────────────────────── */
+
+/* The full-screen overlay: flex-centered, scrollable on small screens */
+.detail-modal-overlay {
+    position: fixed;
+    inset: 0;
+    z-index: 50;
+    background: rgba(2, 6, 23, 0.85);
+    backdrop-filter: blur(6px);
+    -webkit-backdrop-filter: blur(6px);
+    display: flex;
+    align-items: flex-start;       /* align to top so content is reachable */
+    justify-content: center;
+    padding: 2rem 1rem;
+    overflow-y: auto;              /* ← lets the OVERLAY itself scroll */
+}
+
+/* The white/dark card inside the overlay */
+.detail-modal-body {
+    background: #111827;
+    border: 1px solid #1e293b;
+    border-radius: 1.5rem;
+    width: 100%;
+    max-width: 56rem;              /* 4xl */
+    max-height: 90vh;             /* cap to viewport height */
+    overflow-y: auto;             /* ← inner scroll when content overflows */
+    position: relative;
+    box-shadow: 0 25px 60px rgba(0,0,0,0.7);
+    padding: 2rem;
+    margin: auto;                 /* vertical centering when content < 90vh */
+}
+
+/* Lock background page scroll while any modal is open */
+body.modal-open {
+    overflow: hidden;
+}
+
+/* ── Leaflet Map — explicit dimensions so the tile layer always renders ── */
+
+#map {
+    height: 350px !important;     /* explicit height Leaflet requires */
+    width: 100% !important;
+    border-radius: 12px;
+    border: 1px solid #1e293b;
+    z-index: 1;                   /* stay below modal close buttons (z-10+) */
+    overflow: hidden;
+}
+
+/* Leaflet Map Customizations */
+.leaflet-popup-content-wrapper {
+    background: #0f172a !important;
+    color: #f8fafc !important;
+    border: 1px solid #334155 !important;
+    border-radius: 12px !important;
+    box-shadow: 0 10px 25px rgba(0, 0, 0, 0.5) !important;
+    padding: 4px !important;
+}
+
+.leaflet-popup-tip {
+    background: #0f172a !important;
+    border: 1px solid #334155 !important;
+}
+
+.leaflet-container {
+    font-family: 'Outfit', sans-serif !important;
+}
+
+/* ── My Trips Dashboard ─────────────────────────────────────── */
+
+/* Saved trip card */
+.saved-trip-card {
+    background: #111827;
+    border: 1px solid #1e293b;
+    border-radius: 1.5rem;
+    overflow: hidden;
+    transition: border-color 0.25s ease, transform 0.2s ease, box-shadow 0.25s ease;
+    display: flex;
+    flex-direction: column;
+    position: relative;
+}
+.saved-trip-card:hover {
+    border-color: rgba(245, 158, 11, 0.5);
+    transform: translateY(-3px);
+    box-shadow: 0 20px 40px rgba(0,0,0,0.4), 0 0 0 1px rgba(245, 158, 11, 0.1);
+}
+
+/* Bookmark button on recommendation cards */
+.bookmark-btn {
+    display: flex;
+    align-items: center;
+    justify-content: center;
+    width: 2.25rem;
+    height: 2.25rem;
+    border-radius: 0.75rem;
+    border: 1px solid #334155;
+    background: rgba(15, 23, 42, 0.8);
+    color: #64748b;
+    cursor: pointer;
+    transition: all 0.2s ease;
+    flex-shrink: 0;
+}
+.bookmark-btn:hover {
+    border-color: #f59e0b;
+    color: #f59e0b;
+    background: rgba(245, 158, 11, 0.1);
+}
+.bookmark-btn.bookmarked {
+    border-color: #f59e0b !important;
+    background: rgba(245, 158, 11, 0.15) !important;
+    color: #fbbf24 !important;
+}
+
+/* Bookmark pulse animation when saving */
+@keyframes bookmarkPop {
+    0%   { transform: scale(1); }
+    40%  { transform: scale(1.35); }
+    70%  { transform: scale(0.9); }
+    100% { transform: scale(1); }
+}
+.bookmark-btn.pop-anim {
+    animation: bookmarkPop 0.35s ease-out forwards;
+}
+
+/* Toast notification */
+.wander-toast {
+    position: fixed;
+    bottom: 6rem;
+    left: 50%;
+    transform: translateX(-50%) translateY(20px);
+    background: #1e293b;
+    border: 1px solid #334155;
+    border-radius: 1rem;
+    padding: 0.75rem 1.25rem;
+    font-family: 'Outfit', sans-serif;
+    font-size: 0.8rem;
+    font-weight: 600;
+    color: #f1f5f9;
+    display: flex;
+    align-items: center;
+    gap: 0.5rem;
+    box-shadow: 0 10px 40px rgba(0,0,0,0.5);
+    z-index: 9999;
+    opacity: 0;
+    transition: opacity 0.3s ease, transform 0.3s ease;
+    pointer-events: none;
+    white-space: nowrap;
+}
+.wander-toast.show {
+    opacity: 1;
+    transform: translateX(-50%) translateY(0);
+}
+.wander-toast.success .toast-icon { color: #4ade80; }
+.wander-toast.error   .toast-icon { color: #f87171; }
+.wander-toast.info    .toast-icon { color: #f59e0b; }
+
+/* Empty state icon float animation */
+@keyframes floatIcon {
+    0%, 100% { transform: translateY(0); }
+    50%       { transform: translateY(-10px); }
+}
+.trips-empty-icon {
+    animation: floatIcon 3s ease-in-out infinite;
+}
+
+/* Saved trip card header gradient accent */
+.saved-trip-header-accent {
+    height: 4px;
+    background: linear-gradient(90deg, #f59e0b, #fbbf24, #fde68a);
+    border-radius: 1.5rem 1.5rem 0 0;
+}
+
+/* Saved trip category pill */
+.trip-stat-pill {
+    display: inline-flex;
+    align-items: center;
+    gap: 0.3rem;
+    padding: 0.2rem 0.6rem;
+    border-radius: 0.5rem;
+    background: rgba(245, 158, 11, 0.08);
+    border: 1px solid rgba(245, 158, 11, 0.15);
+    color: #fbbf24;
+    font-size: 0.65rem;
+    font-weight: 700;
+}
+
+/* Saved date chip */
+.trip-saved-date {
+    font-size: 0.6rem;
+    color: #475569;
+    font-weight: 600;
+}
+
+/* Detail section within saved trip view */
+#savedTripDetailSection .detail-section-title {
+    font-size: 0.65rem;
+    font-weight: 700;
+    letter-spacing: 0.08em;
+    text-transform: uppercase;
+    color: #64748b;
+    margin-bottom: 0.5rem;
+}
+

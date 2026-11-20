@@ -1,0 +1,471 @@
+<!DOCTYPE html>
+<html lang="en" class="dark">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>WanderPulse - AI Smart Travel Planner</title>
+    <meta name="description" content="AI-Powered Smart Travel Recommendation Web Application. Personalized travel recommendations, Leaflet maps, itineraries, and AI Travel Buddy concierge.">
+    
+    <!-- Tailwind CSS CDN -->
+    <script src="https://cdn.tailwindcss.com"></script>
+    <script>
+        tailwind.config = {
+            darkMode: 'class',
+            theme: {
+                extend: {
+                    colors: {
+                        brand: {
+                            50: '#fffbeb',
+                            400: '#fbbf24',
+                            500: '#f59e0b',
+                            600: '#d97706',
+                            700: '#b45309'
+                        },
+                        darkbg: '#0b0f19',
+                        cardbg: '#111827'
+                    }
+                }
+            }
+        }
+    </script>
+    
+    <!-- FontAwesome 6 & Google Fonts -->
+    <link rel="stylesheet" href="https://cdnjs.cloudflare.com/ajax/libs/font-awesome/6.4.0/css/all.min.css">
+    <link href="https://fonts.googleapis.com/css2?family=Outfit:wght@300;400;500;600;700;800&display=swap" rel="stylesheet">
+    
+    <!-- Leaflet.js CSS & JS -->
+    <link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css" />
+    <script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+
+    <!-- Custom CSS -->
+    <link rel="stylesheet" href="/static/css/style.css">
+</head>
+<body class="bg-darkbg text-slate-100 font-['Outfit'] min-h-screen flex flex-col selection:bg-amber-500 selection:text-slate-950">
+
+    <!-- Header / Navigation -->
+    <nav class="border-b border-slate-800 bg-slate-900/80 backdrop-blur-md sticky top-0 z-30 px-6 py-4 flex justify-between items-center">
+        <div class="flex items-center space-x-3 cursor-pointer" onclick="resetToHome()">
+            <div class="w-10 h-10 rounded-xl bg-gradient-to-tr from-amber-500 to-yellow-300 flex items-center justify-center text-slate-950 font-bold text-xl shadow-lg shadow-amber-500/20">
+                <i class="fa-solid fa-compass"></i>
+            </div>
+            <div>
+                <span class="text-2xl font-extrabold tracking-tight bg-gradient-to-r from-white via-slate-200 to-amber-400 bg-clip-text text-transparent">Wander<span class="text-amber-400">Pulse</span></span>
+                <span class="text-[10px] uppercase font-bold text-amber-500 block -mt-1 tracking-widest">AI Concierge</span>
+            </div>
+        </div>
+        <div class="flex items-center space-x-3">
+            <!-- My Trips Nav Button -->
+            <button id="myTripsNavBtn" onclick="showMyTrips()" class="relative px-4 py-2.5 rounded-xl border border-slate-700 bg-slate-900 hover:border-amber-500 text-slate-300 hover:text-amber-400 font-bold transition flex items-center space-x-2 text-sm">
+                <i class="fa-solid fa-bookmark text-amber-400"></i>
+                <span>My Trips</span>
+                <span id="tripsNavBadge" class="hidden absolute -top-1.5 -right-1.5 w-5 h-5 rounded-full bg-amber-500 text-slate-950 text-[9px] font-black flex items-center justify-center">0</span>
+            </button>
+            <button id="openWizardBtn" class="px-5 py-2.5 rounded-xl bg-gradient-to-r from-amber-500 to-amber-600 hover:from-amber-400 hover:to-amber-500 text-slate-950 font-bold transition shadow-lg shadow-amber-500/20 flex items-center space-x-2">
+                <i class="fa-solid fa-wand-magic-sparkles"></i>
+                <span>Plan New Trip</span>
+            </button>
+        </div>
+    </nav>
+
+    <!-- Main Container -->
+    <main class="flex-1 max-w-7xl mx-auto w-full px-4 sm:px-6 py-8">
+        
+        <!-- Hero Section (Visible before wizard completion) -->
+        <section id="heroSection" class="text-center py-16 flex flex-col items-center justify-center">
+            <span class="px-4 py-1.5 rounded-full text-xs font-bold bg-amber-500/10 text-amber-400 border border-amber-500/20 mb-6 flex items-center space-x-2">
+                <i class="fa-solid fa-sparkles text-xs"></i>
+                <span>Next-Gen AI Travel Concierge</span>
+            </span>
+            <h1 class="text-5xl sm:text-6xl font-black max-w-4xl leading-tight mb-6 tracking-tight">
+                Discover Trips Tailored Exactly to Your <span class="bg-gradient-to-r from-amber-400 via-amber-300 to-yellow-200 bg-clip-text text-transparent">Travel Vibe</span>
+            </h1>
+            <p class="text-slate-400 text-lg max-w-2xl mb-10 leading-relaxed">
+                Complete a 4-step wizard to unlock custom destination recommendations, interactive Leaflet maps, day-by-day itineraries, budget breakdowns, and an AI Travel Buddy.
+            </p>
+            <button id="heroStartBtn" class="px-8 py-4 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 text-lg font-extrabold transition transform hover:-translate-y-1 shadow-xl shadow-amber-500/20 flex items-center space-x-3">
+                <span>Start Travel Wizard</span>
+                <i class="fa-solid fa-arrow-right"></i>
+            </button>
+        </section>
+
+        <!-- Loading State with Step Status & Skeleton Placeholders -->
+        <div id="loadingState" class="hidden py-12">
+            <div class="text-center max-w-xl mx-auto mb-10">
+                <div class="relative inline-block w-16 h-16 mb-4">
+                    <div class="absolute inset-0 border-4 border-amber-500/20 rounded-full"></div>
+                    <div class="absolute inset-0 border-4 border-amber-500 border-t-transparent rounded-full animate-spin"></div>
+                    <div class="absolute inset-0 flex items-center justify-center text-amber-400 text-lg">
+                        <i class="fa-solid fa-plane"></i>
+                    </div>
+                </div>
+                <h3 class="text-2xl font-extrabold text-slate-100">Consulting AI Travel Concierge...</h3>
+                <p id="loadingStepText" class="text-amber-400 text-sm font-semibold mt-2 animate-pulse">
+                    Filtering top candidate destinations...
+                </p>
+            </div>
+
+            <!-- Skeleton Cards Grid -->
+            <div class="grid grid-cols-1 md:grid-cols-3 gap-8 max-w-7xl mx-auto">
+                <div class="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 animate-pulse space-y-4">
+                    <div class="h-6 bg-slate-800 rounded-lg w-1/2"></div>
+                    <div class="h-4 bg-slate-800 rounded-md w-3/4"></div>
+                    <div class="h-24 bg-slate-800/60 rounded-2xl"></div>
+                    <div class="h-10 bg-slate-800 rounded-xl w-full"></div>
+                </div>
+                <div class="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 animate-pulse space-y-4">
+                    <div class="h-6 bg-slate-800 rounded-lg w-1/2"></div>
+                    <div class="h-4 bg-slate-800 rounded-md w-3/4"></div>
+                    <div class="h-24 bg-slate-800/60 rounded-2xl"></div>
+                    <div class="h-10 bg-slate-800 rounded-xl w-full"></div>
+                </div>
+                <div class="bg-slate-900/60 border border-slate-800 rounded-3xl p-6 animate-pulse space-y-4">
+                    <div class="h-6 bg-slate-800 rounded-lg w-1/2"></div>
+                    <div class="h-4 bg-slate-800 rounded-md w-3/4"></div>
+                    <div class="h-24 bg-slate-800/60 rounded-2xl"></div>
+                    <div class="h-10 bg-slate-800 rounded-xl w-full"></div>
+                </div>
+            </div>
+        </div>
+
+        <!-- Recommendations Grid Section -->
+        <section id="resultsSection" class="hidden">
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4 border-b border-slate-800 pb-4">
+                <div>
+                    <h2 class="text-3xl font-extrabold flex items-center gap-3">
+                        <span>Top AI Recommendations</span>
+                        <span id="resultsBadge" class="text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20 px-3 py-1 rounded-full font-bold">3 Destinations</span>
+                    </h2>
+                    <p class="text-slate-400 text-sm mt-1">Based on your onboarding preferences</p>
+                </div>
+                <button onclick="showWizard()" class="px-4 py-2 rounded-xl border border-slate-700 bg-slate-900 hover:border-amber-500 text-xs font-bold text-slate-300 transition flex items-center space-x-2">
+                    <i class="fa-solid fa-sliders text-amber-400"></i>
+                    <span>Refine Preferences</span>
+                </button>
+            </div>
+            <div id="cardsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Dynamic Destination Cards populated by app.js -->
+            </div>
+        </section>
+
+        <!-- ═══════════════════════════════════════════════════════
+             MY TRIPS DASHBOARD SECTION
+             ═══════════════════════════════════════════════════════ -->
+        <section id="myTripsSection" class="hidden">
+            <!-- Section Header -->
+            <div class="flex flex-col sm:flex-row justify-between items-start sm:items-center mb-8 gap-4 border-b border-slate-800 pb-4">
+                <div>
+                    <h2 class="text-3xl font-extrabold flex items-center gap-3">
+                        <i class="fa-solid fa-bookmark text-amber-400"></i>
+                        <span>My Saved Trips</span>
+                        <span id="savedTripsBadge" class="text-xs bg-amber-500/10 text-amber-400 border border-amber-500/20 px-3 py-1 rounded-full font-bold">0 Saved</span>
+                    </h2>
+                    <p class="text-slate-400 text-sm mt-1">Your personally curated collection of travel plans</p>
+                </div>
+                <div class="flex items-center space-x-3">
+                    <button id="clearAllTripsBtn" onclick="confirmClearAllTrips()" class="hidden px-4 py-2 rounded-xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-bold transition flex items-center space-x-2">
+                        <i class="fa-solid fa-trash"></i>
+                        <span>Clear All</span>
+                    </button>
+                    <button onclick="showWizard()" class="px-4 py-2 rounded-xl border border-slate-700 bg-slate-900 hover:border-amber-500 text-xs font-bold text-slate-300 transition flex items-center space-x-2">
+                        <i class="fa-solid fa-plus text-amber-400"></i>
+                        <span>Plan New Trip</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Empty State -->
+            <div id="myTripsEmpty" class="hidden py-24 flex flex-col items-center justify-center text-center">
+                <div class="w-24 h-24 rounded-3xl bg-amber-500/10 border border-amber-500/20 flex items-center justify-center text-4xl mb-6 trips-empty-icon">
+                    🗺️
+                </div>
+                <h3 class="text-2xl font-extrabold text-slate-200 mb-2">No Saved Trips Yet</h3>
+                <p class="text-slate-400 text-sm max-w-sm mb-8">Get personalized AI recommendations and bookmark the destinations you love. They'll appear here for quick access anytime.</p>
+                <button onclick="showWizard()" class="px-6 py-3 rounded-2xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold transition shadow-xl shadow-amber-500/20 flex items-center space-x-2">
+                    <i class="fa-solid fa-wand-magic-sparkles"></i>
+                    <span>Start AI Recommendation Wizard</span>
+                </button>
+            </div>
+
+            <!-- Saved Trips Grid -->
+            <div id="savedTripsGrid" class="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 gap-8">
+                <!-- Populated by app.js renderSavedTrips() -->
+            </div>
+        </section>
+
+        <!-- Saved Trip Full Detail Panel (inline, replaces content) -->
+        <section id="savedTripDetailSection" class="hidden">
+            <!-- Top Bar -->
+            <div class="flex justify-between items-center mb-6 pb-4 border-b border-slate-800">
+                <button onclick="closeSavedTripDetail()" class="flex items-center space-x-2 text-slate-400 hover:text-amber-400 text-sm font-bold transition group">
+                    <i class="fa-solid fa-arrow-left group-hover:-translate-x-1 transition-transform"></i>
+                    <span>Back to My Trips</span>
+                </button>
+                <div class="flex items-center space-x-3">
+                    <button id="savedDetailDeleteBtn" class="px-4 py-2 rounded-xl border border-red-500/30 bg-red-500/10 hover:bg-red-500/20 text-red-400 text-xs font-bold transition flex items-center space-x-2">
+                        <i class="fa-solid fa-trash"></i>
+                        <span>Remove Trip</span>
+                    </button>
+                </div>
+            </div>
+            <div id="savedTripDetailContent"></div>
+        </section>
+    </main>
+
+    <!-- MULTI-STEP ONBOARDING WIZARD MODAL -->
+    <div id="wizardModal" class="fixed inset-0 z-50 bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-xl w-full p-6 sm:p-8 shadow-2xl relative overflow-hidden animate-modal">
+            
+            <!-- Close Button -->
+            <button id="closeWizardBtn" class="absolute top-6 right-6 text-slate-400 hover:text-white transition w-8 h-8 rounded-full hover:bg-slate-800 flex items-center justify-center">
+                <i class="fa-solid fa-xmark text-lg"></i>
+            </button>
+
+            <!-- Wizard Header & Progress Bar -->
+            <div class="mb-6">
+                <div class="flex justify-between items-center text-xs text-slate-400 font-bold mb-2 tracking-wider">
+                    <span id="stepCounter" class="text-amber-400">STEP 1 OF 4</span>
+                    <span id="stepTitle" class="uppercase">DESTINATION & BUDGET</span>
+                </div>
+                <div class="w-full bg-slate-800 h-2 rounded-full overflow-hidden">
+                    <div id="progressBar" class="bg-gradient-to-r from-amber-500 to-yellow-400 h-full w-1/4 transition-all duration-300"></div>
+                </div>
+            </div>
+
+            <!-- STEP 1: Destination Type & Budget Range -->
+            <div class="wizard-step" data-step="1">
+                <h3 class="text-xl font-bold mb-4">Where & How do you want to travel?</h3>
+                
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Destination Type</label>
+                <div class="grid grid-cols-2 gap-4 mb-6">
+                    <button type="button" class="opt-btn p-4 rounded-2xl border border-slate-800 bg-slate-800/40 hover:border-amber-500 flex items-center space-x-3 transition active-opt" data-key="destinationType" data-val="Domestic">
+                        <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-lg">
+                            <i class="fa-solid fa-flag"></i>
+                        </div>
+                        <div class="text-left">
+                            <div class="font-bold text-sm">Domestic</div>
+                            <div class="text-[11px] text-slate-400">Within country</div>
+                        </div>
+                    </button>
+                    <button type="button" class="opt-btn p-4 rounded-2xl border border-slate-800 bg-slate-800/40 hover:border-amber-500 flex items-center space-x-3 transition" data-key="destinationType" data-val="International">
+                        <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-lg">
+                            <i class="fa-solid fa-plane-departure"></i>
+                        </div>
+                        <div class="text-left">
+                            <div class="font-bold text-sm">International</div>
+                            <div class="text-[11px] text-slate-400">Global trips</div>
+                        </div>
+                    </button>
+                </div>
+
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Budget Tier</label>
+                <div class="grid grid-cols-3 gap-3">
+                    <button type="button" class="opt-btn p-3 rounded-2xl border border-slate-800 bg-slate-800/40 hover:border-amber-500 text-center transition active-opt" data-key="budgetRange" data-val="Budget">
+                        <div class="text-[11px] text-slate-400">Backpacker</div>
+                        <div class="font-bold text-amber-400 text-sm">Budget</div>
+                    </button>
+                    <button type="button" class="opt-btn p-3 rounded-2xl border border-slate-800 bg-slate-800/40 hover:border-amber-500 text-center transition" data-key="budgetRange" data-val="Standard">
+                        <div class="text-[11px] text-slate-400">Balanced</div>
+                        <div class="font-bold text-amber-400 text-sm">Standard</div>
+                    </button>
+                    <button type="button" class="opt-btn p-3 rounded-2xl border border-slate-800 bg-slate-800/40 hover:border-amber-500 text-center transition" data-key="budgetRange" data-val="Luxury">
+                        <div class="text-[11px] text-slate-400">Premium</div>
+                        <div class="font-bold text-amber-400 text-sm">Luxury</div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- STEP 2: Travel Companion / Style -->
+            <div class="wizard-step hidden" data-step="2">
+                <h3 class="text-xl font-bold mb-4">Who are you traveling with?</h3>
+                <div class="grid grid-cols-2 gap-4">
+                    <button type="button" class="opt-btn p-4 rounded-2xl border border-slate-800 bg-slate-800/40 hover:border-amber-500 flex items-center space-x-3 transition active-opt" data-key="travelCompanion" data-val="Solo">
+                        <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-lg">
+                            <i class="fa-solid fa-user"></i>
+                        </div>
+                        <span class="font-bold text-sm">Solo Traveler</span>
+                    </button>
+                    <button type="button" class="opt-btn p-4 rounded-2xl border border-slate-800 bg-slate-800/40 hover:border-amber-500 flex items-center space-x-3 transition" data-key="travelCompanion" data-val="Couple">
+                        <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-lg">
+                            <i class="fa-solid fa-heart"></i>
+                        </div>
+                        <span class="font-bold text-sm">Couple</span>
+                    </button>
+                    <button type="button" class="opt-btn p-4 rounded-2xl border border-slate-800 bg-slate-800/40 hover:border-amber-500 flex items-center space-x-3 transition" data-key="travelCompanion" data-val="Family">
+                        <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-lg">
+                            <i class="fa-solid fa-people-roof"></i>
+                        </div>
+                        <span class="font-bold text-sm">Family</span>
+                    </button>
+                    <button type="button" class="opt-btn p-4 rounded-2xl border border-slate-800 bg-slate-800/40 hover:border-amber-500 flex items-center space-x-3 transition" data-key="travelCompanion" data-val="Friends">
+                        <div class="w-10 h-10 rounded-xl bg-amber-500/10 text-amber-400 flex items-center justify-center text-lg">
+                            <i class="fa-solid fa-users"></i>
+                        </div>
+                        <span class="font-bold text-sm">Friends</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- STEP 3: Vibe & Preferences (Multi-Select) -->
+            <div class="wizard-step hidden" data-step="3">
+                <h3 class="text-xl font-bold mb-1">Select Preferred Vibes</h3>
+                <p class="text-xs text-slate-400 mb-4">Choose one or multiple vibes that excite you</p>
+                <div class="grid grid-cols-2 gap-3" id="vibeContainer">
+                    <button type="button" class="vibe-btn p-3 rounded-2xl border border-slate-800 bg-slate-800/40 hover:border-amber-500 flex items-center space-x-3 transition text-sm font-semibold active-vibe" data-val="Mountains">
+                        <span>🏔️ Mountains</span>
+                    </button>
+                    <button type="button" class="vibe-btn p-3 rounded-2xl border border-slate-800 bg-slate-800/40 hover:border-amber-500 flex items-center space-x-3 transition text-sm font-semibold" data-val="Beaches">
+                        <span>🏖️ Beaches</span>
+                    </button>
+                    <button type="button" class="vibe-btn p-3 rounded-2xl border border-slate-800 bg-slate-800/40 hover:border-amber-500 flex items-center space-x-3 transition text-sm font-semibold" data-val="Historical">
+                        <span>🏛️ Historical</span>
+                    </button>
+                    <button type="button" class="vibe-btn p-3 rounded-2xl border border-slate-800 bg-slate-800/40 hover:border-amber-500 flex items-center space-x-3 transition text-sm font-semibold" data-val="Adventure">
+                        <span>🧗 Adventure</span>
+                    </button>
+                    <button type="button" class="vibe-btn p-3 rounded-2xl border border-slate-800 bg-slate-800/40 hover:border-amber-500 flex items-center space-x-3 transition text-sm font-semibold" data-val="Nightlife">
+                        <span>🍸 Nightlife</span>
+                    </button>
+                    <button type="button" class="vibe-btn p-3 rounded-2xl border border-slate-800 bg-slate-800/40 hover:border-amber-500 flex items-center space-x-3 transition text-sm font-semibold" data-val="Relaxation">
+                        <span>🌿 Relaxation</span>
+                    </button>
+                </div>
+            </div>
+
+            <!-- STEP 4: Duration & Pace -->
+            <div class="wizard-step hidden" data-step="4">
+                <h3 class="text-xl font-bold mb-4">Trip Duration & Travel Pace</h3>
+                
+                <div class="mb-6 bg-slate-950 p-4 rounded-2xl border border-slate-800">
+                    <div class="flex justify-between items-center mb-2">
+                        <label class="text-xs font-bold text-slate-400 uppercase tracking-wider">Trip Duration</label>
+                        <span id="durationValue" class="text-amber-400 font-extrabold text-base">5 Days</span>
+                    </div>
+                    <input type="range" id="durationRange" min="1" max="14" value="5" class="w-full accent-amber-500 bg-slate-800 h-2 rounded-lg cursor-pointer">
+                    <div class="flex justify-between text-[10px] text-slate-500 mt-1 font-semibold">
+                        <span>1 Day</span>
+                        <span>7 Days</span>
+                        <span>14 Days</span>
+                    </div>
+                </div>
+
+                <label class="block text-xs font-bold text-slate-400 uppercase tracking-wider mb-2">Travel Pace</label>
+                <div class="grid grid-cols-2 gap-4">
+                    <button type="button" class="opt-btn p-4 rounded-2xl border border-slate-800 bg-slate-800/40 hover:border-amber-500 text-left transition active-opt" data-key="pace" data-val="Relaxed">
+                        <div class="font-bold text-amber-400 text-sm">Relaxed</div>
+                        <div class="text-[11px] text-slate-400">Chill & leisurely</div>
+                    </button>
+                    <button type="button" class="opt-btn p-4 rounded-2xl border border-slate-800 bg-slate-800/40 hover:border-amber-500 text-left transition" data-key="pace" data-val="Action-packed">
+                        <div class="font-bold text-amber-400 text-sm">Action-packed</div>
+                        <div class="text-[11px] text-slate-400">Maximize attractions</div>
+                    </button>
+                </div>
+            </div>
+
+            <!-- Wizard Footer Controls -->
+            <div class="flex justify-between items-center mt-8 pt-4 border-t border-slate-800">
+                <button id="prevBtn" class="px-5 py-2.5 rounded-xl border border-slate-700 text-slate-300 font-bold hover:bg-slate-800 transition disabled:opacity-30 disabled:hover:bg-transparent" disabled>
+                    <i class="fa-solid fa-chevron-left mr-1"></i> Back
+                </button>
+                <button id="nextBtn" class="px-6 py-2.5 rounded-xl bg-amber-500 hover:bg-amber-400 text-slate-950 font-extrabold transition shadow-lg shadow-amber-500/20 flex items-center space-x-2">
+                    <span>Next Step</span>
+                    <i class="fa-solid fa-chevron-right text-xs"></i>
+                </button>
+            </div>
+        </div>
+    </div>
+
+    <!-- DESTINATION DETAIL MODAL
+         Overlay  → id="detailModalOverlay"  (click-outside & ESC target)
+         Body     → class="detail-modal-body" (max-height + overflow-y: auto)
+    -->
+    <div id="detailModalOverlay"
+         class="detail-modal-overlay hidden"
+         role="dialog" aria-modal="true" aria-label="Destination detail">
+
+        <!-- Inner scrollable card — stopPropagation prevents click-outside on inner clicks -->
+        <div class="detail-modal-body animate-modal" id="detailModalBody">
+
+            <!-- ── Top Bar: Back (left) + Close X (right) ── -->
+            <div class="flex justify-between items-center mb-6 pb-4 border-b border-slate-800/70 sticky top-0 bg-slate-900 z-10 -mx-8 px-8 -mt-8 pt-8 rounded-t-3xl">
+                <!-- Back to Recommendations -->
+                <button id="backToResultsBtn"
+                    onclick="closeDetailModal()"
+                    class="flex items-center space-x-2 text-slate-400 hover:text-amber-400 text-sm font-bold transition group">
+                    <i class="fa-solid fa-arrow-left group-hover:-translate-x-1 transition-transform"></i>
+                    <span>Back to Recommendations</span>
+                </button>
+
+                <!-- Close X -->
+                <button id="closeDetailBtn"
+                    onclick="closeDetailModal()"
+                    title="Close"
+                    class="w-9 h-9 rounded-full bg-slate-800 hover:bg-slate-700 text-slate-400 hover:text-white flex items-center justify-center transition">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Dynamic content injected by openDetail() in app.js -->
+            <div id="detailContent"></div>
+
+        </div><!-- /detail-modal-body -->
+    </div><!-- /detailModalOverlay -->
+
+    <!-- CONFIRM CLEAR ALL MODAL -->
+    <div id="confirmClearModal" class="fixed inset-0 z-[60] bg-slate-950/80 backdrop-blur-sm hidden flex items-center justify-center p-4">
+        <div class="bg-slate-900 border border-slate-800 rounded-3xl max-w-sm w-full p-8 shadow-2xl animate-modal text-center">
+            <div class="w-16 h-16 rounded-2xl bg-red-500/10 border border-red-500/20 flex items-center justify-center text-3xl mx-auto mb-4">
+                <i class="fa-solid fa-triangle-exclamation text-red-400"></i>
+            </div>
+            <h3 class="text-xl font-extrabold mb-2">Clear All Saved Trips?</h3>
+            <p class="text-slate-400 text-sm mb-8">This will permanently delete all your bookmarked trips from local storage. This action cannot be undone.</p>
+            <div class="flex space-x-3">
+                <button onclick="document.getElementById('confirmClearModal').classList.add('hidden')" class="flex-1 py-3 rounded-xl border border-slate-700 text-slate-300 font-bold hover:bg-slate-800 transition text-sm">Cancel</button>
+                <button onclick="clearAllTrips()" class="flex-1 py-3 rounded-xl bg-red-500 hover:bg-red-400 text-white font-bold transition text-sm">Yes, Clear All</button>
+            </div>
+        </div>
+    </div>
+
+    <!-- EMBEDDED AI TRAVEL BUDDY CHATBOT SIDEBAR -->
+    <div id="chatbotSidebar" class="fixed bottom-6 right-6 z-40">
+        <button id="toggleChatBtn" class="w-14 h-14 rounded-full bg-gradient-to-tr from-amber-500 to-yellow-300 text-slate-950 font-bold text-2xl flex items-center justify-center shadow-2xl shadow-amber-500/30 hover:scale-105 transition transform">
+            <i class="fa-solid fa-robot"></i>
+        </button>
+
+        <div id="chatWindow" class="hidden fixed bottom-24 right-6 w-96 max-w-[calc(100vw-3rem)] bg-slate-900 border border-slate-800 rounded-3xl shadow-2xl flex flex-col overflow-hidden h-[500px] z-50">
+            <!-- Chat Header -->
+            <div class="bg-slate-800/80 p-4 flex justify-between items-center border-b border-slate-700">
+                <div class="flex items-center space-x-3">
+                    <div class="w-9 h-9 rounded-xl bg-amber-500 text-slate-950 flex items-center justify-center font-bold">
+                        <i class="fa-solid fa-sparkles"></i>
+                    </div>
+                    <div>
+                        <div class="font-bold text-sm">WanderBuddy AI</div>
+                        <div class="text-[10px] font-bold text-amber-400" id="chatContextTag">General Concierge</div>
+                    </div>
+                </div>
+                <button id="closeChatBtn" class="text-slate-400 hover:text-white">
+                    <i class="fa-solid fa-xmark text-lg"></i>
+                </button>
+            </div>
+
+            <!-- Chat Messages Log -->
+            <div id="chatMessages" class="flex-1 p-4 overflow-y-auto space-y-3 text-xs leading-relaxed">
+                <div class="bg-slate-800/70 p-3 rounded-2xl max-w-[85%] text-slate-200 border border-slate-700/50">
+                    👋 Hello! I am your AI Travel Buddy. Select a destination to get customized insights on vegetarian eateries, safety tips, hidden spots, or packing advice!
+                </div>
+            </div>
+
+            <!-- Chat Input Form -->
+            <form id="chatForm" class="p-3 border-t border-slate-800 bg-slate-950 flex space-x-2">
+                <input type="text" id="chatInput" placeholder="Ask WanderBuddy..." class="flex-1 bg-slate-900 border border-slate-800 rounded-xl px-3.5 py-2.5 text-xs text-slate-100 focus:outline-none focus:border-amber-500">
+                <button type="submit" class="px-4 py-2.5 bg-amber-500 hover:bg-amber-400 text-slate-950 font-bold rounded-xl text-xs transition">
+                    <i class="fa-solid fa-paper-plane"></i>
+                </button>
+            </form>
+        </div>
+    </div>
+
+    <!-- Script File -->
+    <script src="/static/js/app.js"></script>
+</body>
+</html>
